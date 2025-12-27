@@ -1,0 +1,8 @@
+{
+  "name": "speedOps - project OS",
+  "description": "A high-signal, high-contrast project management and team operations platform built for fast-scaling startups. Features AI-assisted project breakdowns, live team tracking, and high-visibility dashboards designed for wall displays.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
