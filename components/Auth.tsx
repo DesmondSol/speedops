@@ -17,7 +17,8 @@ import {
   LogIn, 
   AlertTriangle,
   Terminal,
-  Cpu
+  Cpu,
+  Chrome
 } from 'lucide-react';
 
 interface AuthProps {
@@ -46,6 +47,21 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Authentication failed. Please check credentials.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    setError(null);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      onSuccess();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Google Authentication failed.');
     } finally {
       setLoading(false);
     }
@@ -130,6 +146,22 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess }) => {
               )}
             </button>
           </form>
+
+          {/* Social Separator */}
+          <div className="flex items-center gap-4 my-8">
+            <div className="flex-1 h-[1px] bg-white/5" />
+            <span className="text-[8px] font-mono text-gray-700 uppercase tracking-widest">External SSO</span>
+            <div className="flex-1 h-[1px] bg-white/5" />
+          </div>
+
+          <button 
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+            className="w-full flex items-center justify-center gap-3 py-4 border border-white/10 bg-white/5 hover:bg-white/10 text-white text-[10px] font-bold uppercase tracking-[0.2em] transition-all rounded-sm disabled:opacity-30 group"
+          >
+            <Chrome size={16} className="text-gray-400 group-hover:text-white transition-colors" />
+            Bypass with Google
+          </button>
 
           <div className="mt-10 pt-8 border-t border-white/5 flex flex-col items-center gap-4">
             <button 
