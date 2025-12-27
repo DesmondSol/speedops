@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -7,22 +7,21 @@ import {
   Users, 
   Calendar, 
   Building2, 
-  AlertCircle, 
-  BarChart3, 
-  History,
-  ChevronRight,
-  Search,
-  Plus,
+  Plus, 
   Menu,
   X,
   Bug,
-  CloudLightning,
   Wifi,
   LogOut,
-  User
+  User,
+  Share2,
+  Copy,
+  Terminal,
+  Search
 } from 'lucide-react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
+import { getDoc, doc } from 'firebase/firestore';
 
 interface SidebarItem {
   id: string;
@@ -44,20 +43,46 @@ interface Props {
   children: React.ReactNode;
   activeTab: string;
   onTabChange: (id: string) => void;
+  workspaceName: string;
 }
 
-export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) => {
+export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, workspaceName }) => {
   const [expanded, setExpanded] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const currentUser = auth.currentUser;
 
   const handleLogout = async () => {
     if (confirm('TERMINATE CURRENT SESSION?')) {
       await signOut(auth);
-      window.location.reload(); // Refresh to reset state
+      window.location.reload();
     }
   };
 
-  const currentUser = auth.currentUser;
+  const fetchInviteCode = async () => {
+    if (!currentUser) return;
+    // We need to fetch the workspace doc to get the invite code
+    const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+    if (userDoc.exists()) {
+      const wsId = userDoc.data().activeWorkspaceId;
+      const wsDoc = await getDoc(doc(db, 'workspaces', wsId));
+      if (wsDoc.exists()) {
+        setInviteCode(wsDoc.data().inviteCode);
+      }
+    }
+    setShowInviteModal(true);
+  };
+
+  const copyCode = () => {
+    if (inviteCode) {
+      navigator.clipboard.writeText(inviteCode);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-[#050505] text-white">
@@ -87,9 +112,16 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) =>
               {expanded && <span className="ml-4 font-medium uppercase text-xs tracking-widest">{item.label}</span>}
             </button>
           ))}
+          
+          <button
+            onClick={fetchInviteCode}
+            className={`w-full flex items-center p-3 rounded transition-colors group hover:bg-white/5 text-gray-400 hover:text-white mt-4 border-t border-white/5 pt-6`}
+          >
+            <Share2 size={24} className="min-w-[24px] text-[#FF6A00]" />
+            {expanded && <span className="ml-4 font-bold uppercase text-xs tracking-widest text-[#FF6A00]">Invite Operators</span>}
+          </button>
         </nav>
 
-        {/* User Profile / Logout at bottom of sidebar */}
         <div className="p-4 border-t border-white/5 space-y-4 shrink-0">
           <div className="flex items-center gap-4 px-2">
             <div className="w-8 h-8 rounded-sm bg-white/5 flex items-center justify-center text-gray-400 border border-white/10">
@@ -104,7 +136,7 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) =>
           </div>
           <button 
             onClick={handleLogout}
-            className={`w-full flex items-center p-3 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors group`}
+            className={`w-full flex items-center p-3 rounded hover:bg-red-500/10 text-gray-500 hover:text-red-500 transition-colors`}
           >
             <LogOut size={20} className="min-w-[20px]" />
             {expanded && <span className="ml-4 font-bold uppercase text-[10px] tracking-widest">Terminate</span>}
@@ -112,7 +144,7 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) =>
         </div>
       </aside>
 
-      {/* Mobile Bottom Navigation */}
+      {/* Mobile Nav */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0F0F0F] border-t border-white/10 z-50 flex items-center justify-around px-2">
         {sidebarItems.slice(0, 4).map((item) => (
           <button
@@ -126,72 +158,28 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) =>
             <span className="text-[10px] mt-1 font-mono uppercase tracking-tighter">{item.label}</span>
           </button>
         ))}
-        <button 
-          onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center justify-center p-2 text-gray-500"
-        >
+        <button onClick={() => setMobileMenuOpen(true)} className="flex flex-col items-center justify-center p-2 text-gray-500">
           <Menu size={20} />
           <span className="text-[10px] mt-1 font-mono uppercase tracking-tighter">More</span>
         </button>
       </nav>
 
-      {/* Mobile More Menu Overlay */}
-      {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-black/95 z-[60] animate-in fade-in duration-300">
-          <div className="p-8 h-full flex flex-col">
-            <div className="flex justify-between items-center mb-12">
-              <span className="text-2xl font-black text-[#FF6A00] tracking-tighter">SPEEDOPS</span>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 border border-white/10 rounded-full">
-                <X size={24} />
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-4 flex-1">
-              {sidebarItems.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    onTabChange(item.id);
-                    setMobileMenuOpen(false);
-                  }}
-                  className={`flex flex-col items-start p-6 border ${activeTab === item.id ? 'border-[#FF6A00] bg-[#FF6A00]/5' : 'border-white/5 bg-white/5'} rounded-sm`}
-                >
-                  <item.icon size={24} className={activeTab === item.id ? 'text-[#FF6A00]' : 'text-gray-400'} />
-                  <span className="mt-4 font-bold uppercase text-xs tracking-widest">{item.label}</span>
-                </button>
-              ))}
-            </div>
-            
-            <div className="mt-auto border-t border-white/5 pt-8 pb-12 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-white/5 flex items-center justify-center rounded-sm">
-                  <User size={20} className="text-[#FF6A00]" />
-                </div>
-                <span className="text-xs font-mono font-bold uppercase">{currentUser?.email}</span>
-              </div>
-              <button onClick={handleLogout} className="p-4 bg-red-500/10 text-red-500 rounded-sm">
-                <LogOut size={20} />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Content */}
       <main className={`flex-1 transition-all duration-300 md:ml-20 p-4 md:p-8 pb-24 md:pb-8`}>
-        {/* Header */}
         <header className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
           <div className="flex items-center gap-6">
             <div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 rounded-full bg-[#FF6A00] animate-pulse" />
+                <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Cluster: {workspaceName}</span>
+              </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight uppercase">{activeTab.replace('-', ' ')}</h1>
-              <p className="text-gray-500 font-mono text-[10px] md:text-sm uppercase tracking-widest">Operational Intelligence / Alpha_v2.0</p>
-            </div>
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#FF6A00]/5 border border-[#FF6A00]/20 rounded-full">
-               <Wifi size={12} className="text-[#FF6A00] animate-pulse" />
-               <span className="text-[9px] font-mono font-bold text-[#FF6A00] uppercase tracking-widest">Session_Synced</span>
             </div>
           </div>
-          
           <div className="flex items-center gap-3">
+             <div className="hidden lg:flex items-center gap-2 px-3 py-1 bg-[#FF6A00]/5 border border-[#FF6A00]/20 rounded-full">
+               <Wifi size={12} className="text-[#FF6A00]" />
+               <span className="text-[9px] font-mono font-bold text-[#FF6A00] uppercase tracking-widest">Secure_Channel_Active</span>
+            </div>
             <div className="relative group flex-1 md:flex-none">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-[#FF6A00]" size={16} />
               <input 
@@ -205,6 +193,48 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange }) =>
 
         {children}
       </main>
+
+      {/* Invite Modal */}
+      {showInviteModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-xl p-6 animate-in fade-in duration-300">
+          <div className="w-full max-w-md neon-border bg-[#0F0F0F] p-10 shadow-2xl relative">
+            <button onClick={() => setShowInviteModal(false)} className="absolute top-6 right-6 text-gray-500 hover:text-white">
+              <X size={24} />
+            </button>
+            <div className="text-center space-y-8">
+              <div className="w-16 h-16 bg-[#FF6A00]/10 border border-[#FF6A00]/30 flex items-center justify-center rounded-sm mx-auto">
+                <Terminal className="text-[#FF6A00]" size={32} />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black uppercase tracking-tighter mb-2">Nexus Personnel Sync</h3>
+                <p className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">Authorize new operators to this cluster</p>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-6 bg-white/5 border border-white/10 text-center relative group">
+                  <div className="text-[9px] font-mono text-gray-600 uppercase mb-3">Operational Invite Code</div>
+                  <div className="text-4xl font-black font-mono tracking-[0.3em] text-[#FF6A00] select-all uppercase">
+                    {inviteCode || '------'}
+                  </div>
+                </div>
+                <button 
+                  onClick={copyCode}
+                  className="w-full py-4 bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-white hover:text-black transition-all rounded-sm"
+                >
+                  <Copy size={14} />
+                  {copied ? 'Code Cached to Buffer' : 'Copy Nexus Code'}
+                </button>
+              </div>
+              
+              <div className="pt-6 border-t border-white/5">
+                <p className="text-[9px] font-mono text-gray-700 uppercase leading-relaxed">
+                  Operators entering this code during synchronization will gain full access to cluster telemetry and mission control.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

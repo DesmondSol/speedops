@@ -40,6 +40,21 @@ export type Role = 'Frontend' | 'Backend' | 'Tester' | 'QA' | 'Project Manager' 
 
 export type CommentTag = 'Error' | 'Bug' | 'Incomplete' | 'UI/UX' | 'Improvement' | 'Note';
 
+export interface Workspace {
+  id: string;
+  name: string;
+  ownerId: string;
+  members: string[]; // Array of UIDs
+  inviteCode: string;
+  createdAt: any;
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  activeWorkspaceId: string | null;
+}
+
 export interface TaskComment {
   id: string;
   authorId: string;
