@@ -1,6 +1,6 @@
-#<img width="1889" height="983" alt="Screenshot 2025-12-27 at 11 30 07 PM" src="https://github.com/user-attachments/assets/9fa60c28-a69c-4b6e-af69-1cd394c9f283" />
+<img width="1889" height="983" alt="Screenshot 2025-12-27 at 11 30 07 PM" src="https://github.com/user-attachments/assets/9fa60c28-a69c-4b6e-af69-1cd394c9f283" />
 
- speedOps | Internal Startup OS
+## speedOps | Internal Startup OS
 
 **speedOps** is a high-signal, high-contrast operational command center built for fast-scaling startups. It bridges the gap between high-level project management and granular engineering execution by combining AI-assisted planning with a gated, proof-based task orchestration pipeline and multi-user workspace synchronization.
 
