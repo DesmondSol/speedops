@@ -1,11 +1,14 @@
-# Firestore Database Schema
+# Firestore User-Isolated Database Schema
 
-The speedOps database is structured into flat, high-performance collections optimized for real-time `onSnapshot` listeners.
+The speedOps database is structured to ensure complete data sovereignty. All operational data is nested under the authenticated user's unique identifier.
+
+## Primary Pathing
+All collections reside at: `/users/{userId}/[collection_name]`
 
 ## Collections Map
 
-### 1. `fana_projects`
-Main containers for all work units.
+### 1. `/users/{userId}/fana_projects`
+Main containers for all work units owned by the user.
 ```json
 {
   "name": "string",
@@ -28,8 +31,8 @@ Main containers for all work units.
 }
 ```
 
-### 2. `fana_tasks`
-The core operational units.
+### 2. `/users/{userId}/fana_tasks`
+The core operational units for the user's projects.
 ```json
 {
   "projectId": "string (foreign_key)",
@@ -51,8 +54,8 @@ The core operational units.
 }
 ```
 
-### 3. `fana_members`
-Personnel tracking.
+### 3. `/users/{userId}/fana_members`
+Personnel tracking within the user's workspace.
 ```json
 {
   "name": "string",
@@ -68,8 +71,8 @@ Personnel tracking.
 }
 ```
 
-### 4. `fana_milestones`
-Temporal markers for schedules.
+### 4. `/users/{userId}/fana_milestones`
+Temporal markers for the user's specific schedules.
 ```json
 {
   "projectId": "string (foreign_key)",
@@ -82,8 +85,8 @@ Temporal markers for schedules.
 }
 ```
 
-### 5. `fana_activity`
-The live intelligence stream.
+### 5. `/users/{userId}/fana_activity`
+The live intelligence stream for the user's workspace.
 ```json
 {
   "source": "TASK | PROJECT | ERROR | PERSONNEL",
@@ -94,5 +97,5 @@ The live intelligence stream.
 }
 ```
 
-### 6. `fana_errors` & `fana_clients`
+### 6. `/users/{userId}/fana_errors` & `/users/{userId}/fana_clients`
 Standard logging and entity management collections following the patterns above.

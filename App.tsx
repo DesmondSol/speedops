@@ -65,48 +65,59 @@ const App: React.FC = () => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
       setAuthChecking(false);
-      // If user is already logged in and we are on landing, we might want to stay there or move.
-      // For now, let landing be the entry always if showLanding is true.
     });
     return () => unsubAuth();
   }, []);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      // Clear data if no user
+      setProjects([]);
+      setTasks([]);
+      setMembers([]);
+      setMilestones([]);
+      setClients([]);
+      setErrors([]);
+      setActivity([]);
+      setIsCloudSynced(false);
+      return;
+    }
 
-    // Real-time synchronization listeners
-    const unsubProjects = onSnapshot(collection(db, 'fana_projects'), (snapshot) => {
+    const userBase = `users/${currentUser.uid}`;
+
+    // Real-time synchronization listeners nested under UID
+    const unsubProjects = onSnapshot(collection(db, userBase, 'fana_projects'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
       setProjects(data.length > 0 ? data : MOCK_PROJECTS);
       setIsCloudSynced(true);
     });
 
-    const unsubTasks = onSnapshot(collection(db, 'fana_tasks'), (snapshot) => {
+    const unsubTasks = onSnapshot(collection(db, userBase, 'fana_tasks'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
       setTasks(data.length > 0 ? data : MOCK_TASKS);
     });
 
-    const unsubMembers = onSnapshot(collection(db, 'fana_members'), (snapshot) => {
+    const unsubMembers = onSnapshot(collection(db, userBase, 'fana_members'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as TeamMember));
       setMembers(data.length > 0 ? data : MOCK_TEAM);
     });
 
-    const unsubMilestones = onSnapshot(collection(db, 'fana_milestones'), (snapshot) => {
+    const unsubMilestones = onSnapshot(collection(db, userBase, 'fana_milestones'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Milestone));
       setMilestones(data.length > 0 ? data : MOCK_MILESTONES);
     });
 
-    const unsubClients = onSnapshot(collection(db, 'fana_clients'), (snapshot) => {
+    const unsubClients = onSnapshot(collection(db, userBase, 'fana_clients'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Client));
       setClients(data.length > 0 ? data : MOCK_CLIENTS);
     });
 
-    const unsubErrors = onSnapshot(collection(db, 'fana_errors'), (snapshot) => {
+    const unsubErrors = onSnapshot(collection(db, userBase, 'fana_errors'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ErrorLog));
       setErrors(data.length > 0 ? data : MOCK_ERRORS);
     });
 
-    const qActivity = query(collection(db, 'fana_activity'), orderBy('createdAt', 'desc'), limit(50));
+    const qActivity = query(collection(db, userBase, 'fana_activity'), orderBy('createdAt', 'desc'), limit(50));
     const unsubActivity = onSnapshot(qActivity, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ActivityLog));
       setActivity(data);
@@ -124,6 +135,7 @@ const App: React.FC = () => {
   }, [currentUser]);
 
   const addActivity = async (source: string, author: string, content: string) => {
+    if (!currentUser) return;
     const payload = sanitizeForFirestore({
       source,
       author,
@@ -131,12 +143,14 @@ const App: React.FC = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       createdAt: serverTimestamp()
     });
-    await addDoc(collection(db, 'fana_activity'), payload);
+    await addDoc(collection(db, 'users', currentUser.uid, 'fana_activity'), payload);
   };
 
   const handleAddProject = async (newProject: Project) => {
+    if (!currentUser) return;
+    const userPath = `users/${currentUser.uid}`;
     const { id, ...projectData } = newProject;
-    await setDoc(doc(db, 'fana_projects', id), sanitizeForFirestore(projectData));
+    await setDoc(doc(db, userPath, 'fana_projects', id), sanitizeForFirestore(projectData));
     addActivity('PROJECT', newProject.lead, `New mission initiated: ${newProject.name}`);
     
     if (newProject.features) {
@@ -164,7 +178,7 @@ const App: React.FC = () => {
             archived: false
           };
           const { id: _, ...rest } = taskData;
-          await setDoc(doc(db, 'fana_tasks', taskId), sanitizeForFirestore(rest));
+          await setDoc(doc(db, userPath, 'fana_tasks', taskId), sanitizeForFirestore(rest));
         }
       }
     }
@@ -186,21 +200,23 @@ const App: React.FC = () => {
           archived: false
         };
         const { id: _, ...rest } = milestoneData;
-        await setDoc(doc(db, 'fana_milestones', msId), sanitizeForFirestore(rest));
+        await setDoc(doc(db, userPath, 'fana_milestones', msId), sanitizeForFirestore(rest));
       }
     }
   };
 
   const handleAddTask = async (newTask: Task) => {
+    if (!currentUser) return;
     const { id, ...taskData } = newTask;
-    await setDoc(doc(db, 'fana_tasks', id), sanitizeForFirestore(taskData));
+    await setDoc(doc(db, 'users', currentUser.uid, 'fana_tasks', id), sanitizeForFirestore(taskData));
     const member = members.find(m => m.id === newTask.assigneeId);
     addActivity('TASK', member?.name || 'SYSTEM', `Unit ${newTask.name} launched`);
   };
 
   const handleUpdateTask = async (updatedTask: Task) => {
+    if (!currentUser) return;
     const { id, ...taskData } = updatedTask;
-    await updateDoc(doc(db, 'fana_tasks', id), sanitizeForFirestore(taskData));
+    await updateDoc(doc(db, 'users', currentUser.uid, 'fana_tasks', id), sanitizeForFirestore(taskData));
     const member = members.find(m => m.id === updatedTask.assigneeId);
     if (updatedTask.status === TaskStatus.COMPLETED) {
       addActivity('TASK', member?.name || 'SYSTEM', `Unit ${updatedTask.name} mission success`);
@@ -210,33 +226,38 @@ const App: React.FC = () => {
   };
 
   const handleAddMember = async (newMember: TeamMember) => {
+    if (!currentUser) return;
     const { id, ...memberData } = newMember;
-    await setDoc(doc(db, 'fana_members', id), sanitizeForFirestore(memberData));
+    await setDoc(doc(db, 'users', currentUser.uid, 'fana_members', id), sanitizeForFirestore(memberData));
     addActivity('PERSONNEL', 'ADMIN', `Operator ${newMember.name} integrated`);
   };
 
   const handleAddMilestone = async (newMilestone: Milestone) => {
+    if (!currentUser) return;
     const { id, ...msData } = newMilestone;
-    await setDoc(doc(db, 'fana_milestones', id), sanitizeForFirestore(msData));
+    await setDoc(doc(db, 'users', currentUser.uid, 'fana_milestones', id), sanitizeForFirestore(msData));
     addActivity('SCHEDULE', 'SYSTEM', `Critical marker placed: ${newMilestone.title}`);
   };
 
   const handleAddClient = async (newClient: Client) => {
+    if (!currentUser) return;
     const { id, ...cliData } = newClient;
-    await setDoc(doc(db, 'fana_clients', id), sanitizeForFirestore(cliData));
+    await setDoc(doc(db, 'users', currentUser.uid, 'fana_clients', id), sanitizeForFirestore(cliData));
     addActivity('CLIENT', 'SYSTEM', `New corporate entity catalogued: ${newClient.name}`);
   };
 
   const handleAddError = async (newError: ErrorLog) => {
+    if (!currentUser) return;
     const { id, ...errData } = newError;
-    await setDoc(doc(db, 'fana_errors', id), sanitizeForFirestore(errData));
+    await setDoc(doc(db, 'users', currentUser.uid, 'fana_errors', id), sanitizeForFirestore(errData));
     const reporter = members.find(m => m.id === newError.authorId);
     addActivity('ERROR', reporter?.name || 'SYSTEM', `Threat marker signaled: ${newError.title}`);
   };
 
   const handleUpdateError = async (updatedError: ErrorLog) => {
+    if (!currentUser) return;
     const { id, ...errData } = updatedError;
-    await updateDoc(doc(db, 'fana_errors', id), sanitizeForFirestore(errData));
+    await updateDoc(doc(db, 'users', currentUser.uid, 'fana_errors', id), sanitizeForFirestore(errData));
     if (updatedError.status === 'resolved') {
       const resolver = members.find(m => m.id === updatedError.resolvedBy);
       addActivity('ERROR', resolver?.name || 'SYSTEM', `Threat neutralized: ${updatedError.title}`);
