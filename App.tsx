@@ -22,6 +22,7 @@ import { Schedules } from './components/Schedules';
 import { Clients } from './components/Clients';
 import { ErrorQueue } from './components/ErrorQueue';
 import { Landing } from './components/Landing';
+import { Walkthrough } from './components/Walkthrough';
 import { MOCK_PROJECTS, MOCK_TASKS, MOCK_TEAM, MOCK_MILESTONES, MOCK_CLIENTS, MOCK_ERRORS } from './constants';
 import { Project, Task, TeamMember, Milestone, Client, ErrorLog, ActivityLog, TaskStatus } from './types';
 
@@ -44,6 +45,7 @@ const sanitizeForFirestore = (obj: any): any => {
 
 const App: React.FC = () => {
   const [showLanding, setShowLanding] = useState(true);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -224,8 +226,21 @@ const App: React.FC = () => {
     }
   };
 
+  const enterApp = () => {
+    setShowLanding(false);
+    const hasSeenWalkthrough = localStorage.getItem('speedops_walkthrough_seen');
+    if (!hasSeenWalkthrough) {
+      setShowWalkthrough(true);
+    }
+  };
+
+  const completeWalkthrough = () => {
+    setShowWalkthrough(false);
+    localStorage.setItem('speedops_walkthrough_seen', 'true');
+  };
+
   if (showLanding) {
-    return <Landing onEnter={() => setShowLanding(false)} />;
+    return <Landing onEnter={enterApp} />;
   }
 
   const renderContent = () => {
@@ -301,11 +316,14 @@ const App: React.FC = () => {
   };
 
   return (
-    <Layout activeTab={activeTab} onTabChange={setActiveTab}>
-      <div className="animate-in fade-in duration-700 h-full">
-        {renderContent()}
-      </div>
-    </Layout>
+    <>
+      <Layout activeTab={activeTab} onTabChange={setActiveTab}>
+        <div className="animate-in fade-in duration-700 h-full">
+          {renderContent()}
+        </div>
+      </Layout>
+      {showWalkthrough && <Walkthrough onComplete={completeWalkthrough} />}
+    </>
   );
 };
 

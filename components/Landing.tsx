@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Globe,
   Monitor,
-  Flame
+  Flame,
+  Orbit
 } from 'lucide-react';
 
 interface LandingProps {
@@ -45,10 +46,36 @@ export const Landing: React.FC<LandingProps> = ({ onEnter }) => {
       </nav>
 
       {/* 4. Hero Section */}
-      <section className="relative pt-48 pb-32 px-8 flex flex-col items-center text-center max-w-7xl mx-auto">
+      <section className="relative pt-40 pb-32 px-8 flex flex-col items-center text-center max-w-7xl mx-auto">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[300px] md:w-[600px] h-[300px] md:h-[600px] bg-[#FF6A00]/10 blur-[120px] rounded-full pointer-events-none" />
         
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+        {/* BIG LOGO CORE */}
+        <div className="relative mb-12 animate-in fade-in zoom-in duration-1000">
+           {/* Pulsing Outer Rings */}
+           <div className="absolute inset-0 -m-8 border border-[#FF6A00]/10 rounded-full animate-[ping_3s_linear_infinite]" />
+           <div className="absolute inset-0 -m-4 border border-[#FF6A00]/20 rounded-full animate-[pulse_2s_linear_infinite]" />
+           
+           {/* The Core Logo */}
+           <div className="relative w-32 h-32 md:w-48 md:h-48 bg-[#0F0F0F] border-2 border-[#FF6A00] flex items-center justify-center rounded-xl shadow-[0_0_60px_rgba(255,106,0,0.3)] overflow-hidden group">
+              <span className="text-7xl md:text-9xl font-black text-[#FF6A00] drop-shadow-[0_0_20px_rgba(255,106,0,0.8)] select-none">S</span>
+              
+              {/* Internal Scanning Line */}
+              <div className="absolute inset-0 w-full h-[2px] bg-[#FF6A00] opacity-50 shadow-[0_0_10px_#FF6A00] animate-[scan_2.5s_infinite_linear]" />
+              
+              {/* Corner Glitches */}
+              <div className="absolute top-2 left-2 w-1 h-1 bg-[#FF6A00] animate-pulse" />
+              <div className="absolute bottom-2 right-2 w-1 h-1 bg-[#FF6A00] animate-pulse delay-700" />
+           </div>
+
+           {/* Orbiting Elements */}
+           <div className="absolute top-0 left-0 w-full h-full animate-[spin_10s_linear_infinite] pointer-events-none">
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4">
+                <div className="w-2 h-2 bg-[#FF6A00] rounded-full shadow-[0_0_10px_#FF6A00]" />
+              </div>
+           </div>
+        </div>
+
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-300">
           <span className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FF6A00] opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-[#FF6A00]"></span>
@@ -56,15 +83,15 @@ export const Landing: React.FC<LandingProps> = ({ onEnter }) => {
           <span className="text-[9px] font-mono font-bold uppercase tracking-[0.2em] text-[#FF6A00]">Neural Sync V1.2.0 Live</span>
         </div>
 
-        <h1 className="text-6xl md:text-8xl lg:text-[120px] font-black tracking-tighter uppercase leading-[0.85] mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-200">
-          Neural <br /> <span className="text-[#FF6A00] drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]">Orchestration</span>
+        <h1 className="text-6xl md:text-8xl lg:text-[110px] font-black tracking-tighter uppercase leading-[0.85] mb-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-500">
+          speedOps <br /> <span className="text-[#FF6A00] drop-shadow-[0_0_30px_rgba(255,106,0,0.4)]">Orchestration</span>
         </h1>
 
-        <p className="max-w-2xl text-gray-400 text-lg md:text-xl font-medium mb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-400">
+        <p className="max-w-2xl text-gray-400 text-lg md:text-xl font-medium mb-12 animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-700">
           Stop managing tasks. Start orchestrating reality. The high-signal operational core for fast-scaling startups that demand technical precision and zero-friction AI planning.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-600">
+        <div className="flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-bottom-16 duration-1000 delay-1000">
           <button 
             onClick={onEnter}
             className="px-10 py-5 bg-[#FF6A00] text-black text-xs font-black uppercase tracking-[0.2em] hover:bg-white hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,106,0,0.2)] rounded-sm"

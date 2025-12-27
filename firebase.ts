@@ -5,16 +5,16 @@ import { getAnalytics } from 'firebase/analytics';
 
 /**
  * speedOps Operational Cloud Configuration.
- * Connected to Firebase project: fanaops-1
+ * Connected to Firebase project: speedops-1
  */
 const firebaseConfig = {
-  apiKey: "AIzaSyBo6juFXtqnUwpR8Lqc-pP6oT3BOlmu8jo",
-  authDomain: "fanaops-1.firebaseapp.com",
-  projectId: "fanaops-1",
-  storageBucket: "fanaops-1.firebasestorage.app",
-  messagingSenderId: "474487802950",
-  appId: "1:474487802950:web:d273c8c0071ad7b6540e47",
-  measurementId: "G-6C8V1F9K47"
+  apiKey: "AIzaSyCH-xkWv-pzGxiiGx1LV-m_0LNb6_osMKE",
+  authDomain: "speedops-1.firebaseapp.com",
+  projectId: "speedops-1",
+  storageBucket: "speedops-1.firebasestorage.app",
+  messagingSenderId: "407827264010",
+  appId: "1:407827264010:web:bae368747306bb36a725f3",
+  measurementId: "G-18QNZJWLVC"
 };
 
 // Initialize Firebase Application
