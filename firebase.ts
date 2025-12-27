@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics } from 'firebase/analytics';
+import { getAuth } from 'firebase/auth';
 
 /**
  * speedOps Operational Cloud Configuration.
@@ -22,4 +23,5 @@ const app = initializeApp(firebaseConfig);
 
 // Export Operational Services
 export const db = getFirestore(app);
+export const auth = getAuth(app);
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;

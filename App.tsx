@@ -12,7 +12,8 @@ import {
   limit,
   serverTimestamp 
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { db, auth } from './firebase';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { Projects } from './components/Projects';
@@ -23,6 +24,7 @@ import { Clients } from './components/Clients';
 import { ErrorQueue } from './components/ErrorQueue';
 import { Landing } from './components/Landing';
 import { Walkthrough } from './components/Walkthrough';
+import { Auth } from './components/Auth';
 import { MOCK_PROJECTS, MOCK_TASKS, MOCK_TEAM, MOCK_MILESTONES, MOCK_CLIENTS, MOCK_ERRORS } from './constants';
 import { Project, Task, TeamMember, Milestone, Client, ErrorLog, ActivityLog, TaskStatus } from './types';
 
@@ -44,9 +46,12 @@ const sanitizeForFirestore = (obj: any): any => {
 };
 
 const App: React.FC = () => {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const [showLanding, setShowLanding] = useState(true);
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
+  
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [members, setMembers] = useState<TeamMember[]>([]);
@@ -57,6 +62,18 @@ const App: React.FC = () => {
   const [isCloudSynced, setIsCloudSynced] = useState(false);
 
   useEffect(() => {
+    const unsubAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+      setAuthChecking(false);
+      // If user is already logged in and we are on landing, we might want to stay there or move.
+      // For now, let landing be the entry always if showLanding is true.
+    });
+    return () => unsubAuth();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
     // Real-time synchronization listeners
     const unsubProjects = onSnapshot(collection(db, 'fana_projects'), (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Project));
@@ -104,7 +121,7 @@ const App: React.FC = () => {
       unsubErrors();
       unsubActivity();
     };
-  }, []);
+  }, [currentUser]);
 
   const addActivity = async (source: string, author: string, content: string) => {
     const payload = sanitizeForFirestore({
@@ -228,6 +245,9 @@ const App: React.FC = () => {
 
   const enterApp = () => {
     setShowLanding(false);
+  };
+
+  const completeAuth = () => {
     const hasSeenWalkthrough = localStorage.getItem('speedops_walkthrough_seen');
     if (!hasSeenWalkthrough) {
       setShowWalkthrough(true);
@@ -239,8 +259,23 @@ const App: React.FC = () => {
     localStorage.setItem('speedops_walkthrough_seen', 'true');
   };
 
+  if (authChecking) {
+    return (
+      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-2 border-[#FF6A00] border-t-transparent animate-spin rounded-full" />
+          <div className="text-[10px] font-mono text-[#FF6A00] uppercase tracking-[0.3em] animate-pulse">Syncing Session...</div>
+        </div>
+      </div>
+    );
+  }
+
   if (showLanding) {
     return <Landing onEnter={enterApp} />;
+  }
+
+  if (!currentUser) {
+    return <Auth onSuccess={completeAuth} />;
   }
 
   const renderContent = () => {
