@@ -17,7 +17,9 @@ import {
   Share2,
   Copy,
   Terminal,
-  Search
+  Search,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
@@ -52,8 +54,24 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, work
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [theme, setTheme] = useState<'dark' | 'light'>(
+    (localStorage.getItem('speedops_theme') as 'dark' | 'light') || 'dark'
+  );
 
   const currentUser = auth.currentUser;
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.body.classList.add('light-mode');
+    } else {
+      document.body.classList.remove('light-mode');
+    }
+    localStorage.setItem('speedops_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
 
   const handleLogout = async () => {
     if (confirm('TERMINATE CURRENT SESSION?')) {
@@ -64,7 +82,6 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, work
 
   const fetchInviteCode = async () => {
     if (!currentUser) return;
-    // We need to fetch the workspace doc to get the invite code
     const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
     if (userDoc.exists()) {
       const wsId = userDoc.data().activeWorkspaceId;
@@ -85,7 +102,7 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, work
   };
 
   return (
-    <div className="flex min-h-screen bg-[#050505] text-white">
+    <div className="flex min-h-screen transition-colors duration-300">
       {/* Desktop Sidebar */}
       <aside 
         className={`fixed left-0 top-0 h-full bg-[#0F0F0F] border-r border-white/10 z-50 transition-all duration-300 hidden md:flex flex-col ${expanded ? 'w-64' : 'w-20'}`}
@@ -123,6 +140,14 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, work
         </nav>
 
         <div className="p-4 border-t border-white/5 space-y-4 shrink-0">
+          <button 
+            onClick={toggleTheme}
+            className="w-full flex items-center p-3 rounded hover:bg-white/5 text-gray-400 hover:text-white transition-colors"
+          >
+            {theme === 'dark' ? <Sun size={20} className="min-w-[20px]" /> : <Moon size={20} className="min-w-[20px]" />}
+            {expanded && <span className="ml-4 font-bold uppercase text-[10px] tracking-widest">{theme === 'dark' ? 'Day Mode' : 'Black Mode'}</span>}
+          </button>
+          
           <div className="flex items-center gap-4 px-2">
             <div className="w-8 h-8 rounded-sm bg-white/5 flex items-center justify-center text-gray-400 border border-white/10">
               <User size={16} />
@@ -158,9 +183,9 @@ export const Layout: React.FC<Props> = ({ children, activeTab, onTabChange, work
             <span className="text-[10px] mt-1 font-mono uppercase tracking-tighter">{item.label}</span>
           </button>
         ))}
-        <button onClick={() => setMobileMenuOpen(true)} className="flex flex-col items-center justify-center p-2 text-gray-500">
-          <Menu size={20} />
-          <span className="text-[10px] mt-1 font-mono uppercase tracking-tighter">More</span>
+        <button onClick={toggleTheme} className="flex flex-col items-center justify-center p-2 text-gray-500">
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          <span className="text-[10px] mt-1 font-mono uppercase tracking-tighter">Theme</span>
         </button>
       </nav>
 
