@@ -3,15 +3,15 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 /**
  * speedOps Operational Intelligence
- * Model: gemini-2.5-flash-lite-latest
- * Optimized for low latency and high free-tier availability.
+ * Model: gemini-flash-lite-latest
+ * Optimized for high-frequency, structured technical planning.
  */
 
 export const generateProjectBrief = async (details: any, team: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite-latest',
+      model: 'gemini-flash-lite-latest',
       config: {
         systemInstruction: "You are the speedOps Strategic Architect. Generate high-signal Markdown technical briefs. No filler. Precision only. Use standard operational headers.",
         thinkingConfig: { thinkingBudget: 0 }
@@ -35,7 +35,7 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite-latest',
+      model: 'gemini-flash-lite-latest',
       config: {
         systemInstruction: "Operational Logician: Convert briefs into JSON work units. Map tasks to the provided Team IDs. Output strictly valid JSON.",
         responseMimeType: "application/json",

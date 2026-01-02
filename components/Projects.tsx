@@ -14,7 +14,6 @@ import {
   Zap,
   Flag,
   UserCheck,
-  // Added missing BrainCircuit import
   BrainCircuit
 } from 'lucide-react';
 import { ProjectStatus, ProjectStage, Role, Project, Client, TeamMember } from '../types';
@@ -25,7 +24,7 @@ const ROLES: Role[] = ['Frontend', 'Backend', 'Tester', 'QA', 'Project Manager',
 interface ProjectsProps {
   projects: Project[];
   clients: Client[];
-  members: TeamMember[]; // Now accepting dynamic members
+  members: TeamMember[]; 
   onAddProject: (p: Project) => void;
   onUpdateProject?: (p: Project) => void;
   onDeleteProject?: (id: string) => void;
@@ -54,7 +53,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
   const [generatedBrief, setGeneratedBrief] = useState('');
   const [generatedBreakdown, setGeneratedBreakdown] = useState<{features: any[], milestones: any[]}>({ features: [], milestones: [] });
 
-  // Token Management: Persistence Layer
+  // Persistence logic for drafts
   useEffect(() => {
     const draft = localStorage.getItem('speedops_deployment_draft');
     if (draft && view === 'create') {
@@ -161,7 +160,6 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
     localStorage.removeItem('speedops_deployment_draft');
   };
 
-  // Added handleProjectSelect to fix missing function error
   const handleProjectSelect = (project: Project) => {
     setSelectedProject(project);
     setView('details');
@@ -283,7 +281,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
                  <div className="absolute inset-0 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
                  <BrainCircuit className="absolute inset-0 m-auto text-[#FF6A00]" size={24} />
                </div>
-               <div className="text-[10px] font-mono text-[#FF6A00] uppercase tracking-[0.5em]">Neural Processing (2.5 Lite)...</div>
+               <div className="text-[10px] font-mono text-[#FF6A00] uppercase tracking-[0.5em]">Neural Processing (Lite Tier)...</div>
              </div>
           ) : (
             <div className="space-y-8">
@@ -398,7 +396,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
                         <h4 className="text-[11px] font-bold uppercase tracking-[0.3em] text-white">Temporal Markers</h4>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {generatedBreakdown.milestones.map((m, i) => (
+                        {generatedBreakdown.milestones.map((m: any, i: number) => (
                           <div key={i} className="flex justify-between items-center text-[10px] bg-black/40 p-3 border border-white/5 rounded-sm">
                             <span className="text-gray-300 font-bold uppercase truncate pr-4">{m.title}</span>
                             <span className="text-[#FF6A00] font-mono shrink-0">DAY {m.dayOffset}</span>
@@ -412,7 +410,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
                       <h4 className="text-[11px] font-bold uppercase tracking-[0.3em] text-white">Operational Units</h4>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {generatedBreakdown.features.map((feature, fidx) => (
+                        {generatedBreakdown.features.map((feature: any, fidx: number) => (
                         <div key={fidx} className="bg-white/5 p-5 border border-white/10 hover:border-[#FF6A00]/30 transition-all">
                             <div className="text-[#FF6A00] font-bold uppercase text-[10px] mb-2 tracking-widest">{feature.featureName}</div>
                             <div className="text-[9px] text-gray-500 font-mono italic">Mapped Load: {feature.tasks.length} atomic tasks.</div>
