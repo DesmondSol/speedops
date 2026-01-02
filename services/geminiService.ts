@@ -2,9 +2,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 
 /**
- * Optimized for speedOps Cluster: 
- * Using gemini-2.5-flash-lite-latest for maximum efficiency, 
- * high rate limits, and minimal token consumption.
+ * speedOps Operational Intelligence
+ * Model: gemini-2.5-flash-lite-latest
+ * Optimized for low latency and high free-tier availability.
  */
 
 export const generateProjectBrief = async (details: any, team: any[]) => {
@@ -13,21 +13,21 @@ export const generateProjectBrief = async (details: any, team: any[]) => {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-lite-latest',
       config: {
-        systemInstruction: "You are the speedOps Strategic Architect. Generate high-signal technical briefs in Markdown. No filler. Precision only.",
+        systemInstruction: "You are the speedOps Strategic Architect. Generate high-signal Markdown technical briefs. No filler. Precision only. Use standard operational headers.",
+        thinkingConfig: { thinkingBudget: 0 }
       },
-      contents: `Context:
+      contents: `CONTEXT:
       Project: ${details.name}
       Client: ${details.client}
       Purpose: ${details.purpose}
-      Features: ${details.features}
-      Team: ${team.map(t => `${t.name} (${t.roles.join(',')})`).join('; ')}
+      Personnel: ${team.map(t => `${t.name}(${t.roles.join(',')})`).join('|')}
       
-      Output: 1.Summary, 2.Objectives, 3.Feature Map, 4.Timeline, 5.Risks.`,
+      TASK: Generate (1) Summary (2) Objectives (3) Feature Map (4) Timeline (5) Risk Vectors.`,
     });
     return response.text;
   } catch (error) {
     console.error('Gemini Brief Gen Error:', error);
-    return "Error generating brief. System stable. Check connection.";
+    return "Operational Error: Brief generation failed. Check neural link.";
   }
 };
 
@@ -37,8 +37,9 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-lite-latest',
       config: {
-        systemInstruction: "Operational Logician: Convert briefs into JSON units. Assign tasks to Team IDs. Keep names short.",
+        systemInstruction: "Operational Logician: Convert briefs into JSON work units. Map tasks to the provided Team IDs. Output strictly valid JSON.",
         responseMimeType: "application/json",
+        thinkingConfig: { thinkingBudget: 0 },
         responseSchema: {
           type: Type.OBJECT,
           properties: {
@@ -84,7 +85,7 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
           required: ['features', 'milestones']
         }
       },
-      contents: `Brief: ${brief}\n\nID Map:\n${team.map(t => `${t.id}: ${t.name}`).join('\n')}`,
+      contents: `BRIEF: ${brief}\n\nIDS: ${team.map(t => `${t.id}:${t.name}`).join(',')}`,
     });
     return JSON.parse(response.text || '{"features": [], "milestones": []}');
   } catch (error) {

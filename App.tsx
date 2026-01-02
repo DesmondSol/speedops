@@ -63,7 +63,6 @@ const App: React.FC = () => {
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        // Fetch user profile to get workspace ID
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setActiveWorkspaceId(userDoc.data().activeWorkspaceId || null);
@@ -86,7 +85,6 @@ const App: React.FC = () => {
     }
 
     setWsLoading(true);
-    // Subscribe to workspace info
     const unsubWs = onSnapshot(doc(db, 'workspaces', activeWorkspaceId), (snapshot) => {
       if (snapshot.exists()) {
         setActiveWorkspace({ id: snapshot.id, ...snapshot.data() } as Workspace);
@@ -301,7 +299,7 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard projects={projects} members={members} tasks={tasks} milestones={milestones} clients={clients} errors={errors} activity={activity} />;
       case 'projects':
-        return <Projects projects={projects} clients={clients} onAddProject={handleAddProject} />;
+        return <Projects projects={projects} clients={clients} members={members} onAddProject={handleAddProject} />;
       case 'tasks':
         return <Tasks projects={projects} tasks={tasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} />;
       case 'teams':
