@@ -34,17 +34,17 @@ import {
   Hash,
   Terminal,
   FileText,
-  // Fix: Added missing Zap import from lucide-react
-  Zap
+  Zap,
+  Trash2
 } from 'lucide-react';
 import { Project, Task, TaskStatus, TeamMember, TaskProof, TaskComment, CommentTag, Role } from '../types';
-import { MOCK_TEAM } from '../constants';
 
 interface TasksProps {
   projects: Project[];
   tasks: Task[];
   onAddTask: (task: Task) => void;
   onUpdateTask: (task: Task) => void;
+  onDeleteTask: (id: string) => void;
 }
 
 const STATUS_COLUMNS = [
@@ -65,7 +65,7 @@ const COMMENT_TAGS: { tag: CommentTag; icon: any; color: string }[] = [
   { tag: 'Note', icon: Info, color: 'text-gray-400' },
 ];
 
-export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpdateTask }) => {
+export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
   const [view, setView] = useState<'board' | 'create'>('board');
   const [layoutMode, setLayoutMode] = useState<'horizontal' | 'vertical'>('horizontal');
   const [activeProjectTab, setActiveProjectTab] = useState<'all' | string>('all');
@@ -180,13 +180,11 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
   const handleAddComment = () => {
     if (!selectedTask || !commentInput.trim()) return;
     
-    // For demo purposes, we'll assume current user is "Alex Rivera" (id: 1)
-    const currentUser = MOCK_TEAM[0]; 
-    
+    // For demo purposes, we'll assume current user is the lead or author
     const newComment: TaskComment = {
       id: `comment-${Date.now()}`,
-      authorId: currentUser.id,
-      authorRole: currentUser.roles[0],
+      authorId: 'SYSTEM',
+      authorRole: 'DevOps',
       content: commentInput,
       tag: selectedCommentTag,
       timestamp: new Date().toLocaleString()
@@ -202,7 +200,14 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
     setCommentInput('');
   };
 
-  const getMember = (id: string) => MOCK_TEAM.find(m => m.id === id);
+  const handleDeleteTask = () => {
+    if (!selectedTask) return;
+    if (confirm(`PURGE OPERATIONAL UNIT ${selectedTask.name.toUpperCase()}?`)) {
+      onDeleteTask(selectedTask.id);
+      setSelectedTask(null);
+    }
+  };
+
   const getProject = (id: string) => projects.find(p => p.id === id);
 
   return (
@@ -286,10 +291,7 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                       <h4 className="font-bold text-xs md:text-sm uppercase mb-4 line-clamp-2 group-hover:text-[#FF6A00] transition-colors leading-relaxed tracking-tight">{task.name}</h4>
                       <div className="flex items-center justify-between mt-4 border-t border-white/5 pt-4">
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-gray-800 border border-white/10 flex items-center justify-center text-[8px] font-black text-[#FF6A00]">
-                            {getMember(task.assigneeId)?.name[0]}
-                          </div>
-                          <span className="text-[9px] font-mono text-gray-500 uppercase">{getMember(task.assigneeId)?.name.split(' ')[0]}</span>
+                          <span className="text-[9px] font-mono text-gray-500 uppercase truncate">Operator ID: {task.assigneeId}</span>
                         </div>
                         <div className="text-[9px] font-mono text-gray-700 flex items-center gap-1"><Clock size={10} /> {task.timeInStage}</div>
                       </div>
@@ -326,11 +328,8 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                       <input className="input-base" value={newTaskData.name} onChange={e => setNewTaskData({...newTaskData, name: e.target.value})} />
                     </div>
                     <div>
-                      <label className="label-sm">Primary Operator</label>
-                      <select className="input-base" value={newTaskData.assigneeId} onChange={e => setNewTaskData({...newTaskData, assigneeId: e.target.value})}>
-                        <option value="">SELECT PERSON...</option>
-                        {MOCK_TEAM.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
+                      <label className="label-sm">Primary Operator ID</label>
+                      <input className="input-base" value={newTaskData.assigneeId} onChange={e => setNewTaskData({...newTaskData, assigneeId: e.target.value})} />
                     </div>
                   </div>
                   <div>
@@ -344,7 +343,7 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
         )}
       </div>
 
-      {/* 4. Task Detail Modal (With Comment Section) */}
+      {/* 4. Task Detail Modal */}
       {selectedTask && (
         <div className="fixed inset-0 z-[100] flex justify-end bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="w-full md:max-w-5xl bg-[#0F0F0F] h-full border-l border-white/10 flex flex-col overflow-hidden animate-in slide-in-from-right duration-500 shadow-2xl">
@@ -353,11 +352,19 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                 <div className="text-[9px] font-mono text-[#FF6A00] uppercase mb-2 tracking-[0.3em] font-bold">{getProject(selectedTask.projectId)?.name}</div>
                 <h2 className="text-2xl md:text-3xl font-bold uppercase leading-tight">{selectedTask.name}</h2>
               </div>
-              <button onClick={() => setSelectedTask(null)} className="text-gray-500 hover:text-white transition-colors p-2"><X size={28} /></button>
+              <div className="flex gap-4">
+                <button 
+                  onClick={handleDeleteTask}
+                  className="text-red-500 hover:bg-red-500/10 p-2 rounded-sm border border-red-500/20 transition-all flex items-center gap-2 text-[10px] font-mono uppercase font-bold"
+                >
+                  <Trash2 size={18} /> Purge Unit
+                </button>
+                <button onClick={() => setSelectedTask(null)} className="text-gray-500 hover:text-white transition-colors p-2"><X size={28} /></button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
-              {/* Left Column: Info & History */}
+              {/* Left Column */}
               <div className="flex-1 overflow-y-auto p-8 space-y-10 custom-scrollbar border-r border-white/5">
                 <section>
                   <h3 className="label-sm mb-4 flex items-center gap-2"><FileText size={14} /> Intelligence Briefing</h3>
@@ -366,11 +373,8 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
 
                 <div className="grid grid-cols-2 gap-6">
                   <section>
-                    <h3 className="label-sm mb-4 flex items-center gap-2"><User size={14} /> Current Operator</h3>
-                    <div className="flex items-center gap-3 bg-white/5 p-4 border border-white/5">
-                      <div className="w-10 h-10 bg-[#FF6A00] text-black font-black flex items-center justify-center rounded-full">{getMember(selectedTask.assigneeId)?.name[0]}</div>
-                      <div className="text-xs font-bold uppercase">{getMember(selectedTask.assigneeId)?.name}</div>
-                    </div>
+                    <h3 className="label-sm mb-4 flex items-center gap-2"><User size={14} /> Operator ID</h3>
+                    <div className="bg-white/5 p-4 border border-white/5 text-xs font-mono font-bold uppercase">{selectedTask.assigneeId}</div>
                   </section>
                   <section>
                     <h3 className="label-sm mb-4 flex items-center gap-2"><Target size={14} /> Operational Stage</h3>
@@ -414,7 +418,7 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                 </div>
               </div>
 
-              {/* Right Column: Intelligence Feed (Comments) */}
+              {/* Right Column */}
               <div className="w-full lg:w-[400px] flex flex-col bg-[#050505]">
                 <div className="p-8 border-b border-white/5 bg-white/2">
                    <h3 className="label-sm mb-4 flex items-center gap-2"><Terminal size={14} /> Intelligence Feed</h3>
@@ -450,21 +454,14 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-8 space-y-6 custom-scrollbar">
-                  {selectedTask.comments.length === 0 && (
-                    <div className="py-20 text-center opacity-20 flex flex-col items-center">
-                      <MessageSquare size={32} className="mb-2" />
-                      <span className="text-[10px] font-mono uppercase tracking-[0.2em]">Intel_Stream_Silent</span>
-                    </div>
-                  )}
                   {selectedTask.comments.map((comment) => {
-                    const author = getMember(comment.authorId);
                     const tagMeta = COMMENT_TAGS.find(t => t.tag === comment.tag);
                     return (
                       <div key={comment.id} className="relative pl-4 border-l-2 border-white/5 group">
                         <div className={`absolute -left-[2px] top-0 w-[2px] h-full ${tagMeta?.color.replace('text-', 'bg-')} shadow-[0_0_8px_currentColor]`} />
                         <div className="flex justify-between items-start mb-2">
                            <div>
-                             <span className="text-[10px] font-bold uppercase text-white block">{author?.name}</span>
+                             <span className="text-[10px] font-bold uppercase text-white block">Operator ID: {comment.authorId}</span>
                              <span className="text-[8px] font-mono text-gray-600 uppercase tracking-widest">{comment.authorRole}</span>
                            </div>
                            <div className="text-right">
@@ -487,7 +484,7 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
         </div>
       )}
 
-      {/* 5. Handover Protocol Modal (Migration Confirmation) */}
+      {/* Handover Protocol Modal */}
       {showTransitionModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 p-6 backdrop-blur-xl animate-in fade-in duration-300">
            <div className="w-full max-w-xl neon-border bg-[#0F0F0F] p-10 space-y-8 shadow-2xl">
@@ -525,16 +522,14 @@ export const Tasks: React.FC<TasksProps> = ({ projects, tasks, onAddTask, onUpda
                  </div>
                  
                  <div>
-                   <label className="label-sm">Assign Next Operator</label>
+                   <label className="label-sm">Assign Next Operator ID</label>
                    <div className="relative">
                      <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600" size={16} />
-                     <select 
+                     <input 
                        className="input-base pl-12"
                        value={transitionData.nextAssignee}
                        onChange={e => setTransitionData({...transitionData, nextAssignee: e.target.value})}
-                     >
-                       {MOCK_TEAM.map(m => <option key={m.id} value={m.id}>{m.name.toUpperCase()} ({m.roles[0]})</option>)}
-                     </select>
+                     />
                    </div>
                  </div>
 

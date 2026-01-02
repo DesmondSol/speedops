@@ -14,7 +14,8 @@ import {
   Zap,
   Flag,
   UserCheck,
-  BrainCircuit
+  BrainCircuit,
+  Trash2
 } from 'lucide-react';
 import { ProjectStatus, ProjectStage, Role, Project, Client, TeamMember } from '../types';
 import { generateProjectBrief, generateTaskBreakdown } from '../services/geminiService';
@@ -26,8 +27,8 @@ interface ProjectsProps {
   clients: Client[];
   members: TeamMember[]; 
   onAddProject: (p: Project) => void;
-  onUpdateProject?: (p: Project) => void;
-  onDeleteProject?: (id: string) => void;
+  onUpdateProject: (p: Project) => void;
+  onDeleteProject: (id: string) => void;
 }
 
 export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, onAddProject, onUpdateProject, onDeleteProject }) => {
@@ -165,6 +166,15 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
     setView('details');
   };
 
+  const handleDelete = () => {
+    if (!selectedProject) return;
+    if (confirm(`DECOMMISSION MISSION ${selectedProject.name.toUpperCase()}? THIS CANNOT BE UNDONE.`)) {
+      onDeleteProject(selectedProject.id);
+      setView('list');
+      setSelectedProject(null);
+    }
+  };
+
   if (view === 'details' && selectedProject) {
     return (
       <div className="max-w-7xl mx-auto pb-12 px-2 md:px-0">
@@ -172,9 +182,15 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, members, 
            <button onClick={() => setView('list')} className="flex items-center gap-2 text-gray-500 hover:text-[#FF6A00] uppercase font-mono text-[10px] transition-colors">
              <ChevronLeft size={14} /> Back
            </button>
-           <div className="md:text-right w-full">
+           <div className="md:text-right w-full flex flex-col md:items-end gap-2">
              <h2 className="text-xl md:text-3xl font-bold tracking-tight uppercase line-clamp-1">{selectedProject.name}</h2>
              <p className="text-[#FF6A00] font-mono text-[9px] md:text-xs uppercase tracking-widest">{selectedProject.client}</p>
+             <button 
+               onClick={handleDelete}
+               className="mt-2 text-red-500 hover:text-white hover:bg-red-500/20 px-3 py-1 border border-red-500/30 rounded-sm text-[9px] font-mono uppercase tracking-widest flex items-center gap-2 w-fit transition-all"
+             >
+               <Trash2 size={12} /> Decommission Mission
+             </button>
            </div>
         </div>
 

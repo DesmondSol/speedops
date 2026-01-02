@@ -8,6 +8,7 @@ import {
   getDoc,
   updateDoc, 
   addDoc,
+  deleteDoc,
   query,
   orderBy,
   limit,
@@ -212,6 +213,18 @@ const App: React.FC = () => {
     }
   };
 
+  const handleDeleteProject = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_projects', id));
+    addActivity('PROJECT', 'SYSTEM', `Project ${id} decommissioned.`);
+  };
+
+  const handleUpdateProject = async (updatedProject: Project) => {
+    if (!activeWorkspaceId) return;
+    const { id, ...data } = updatedProject;
+    await updateDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_projects', id), sanitizeForFirestore(data));
+  };
+
   const handleAddTask = async (newTask: Task) => {
     if (!activeWorkspaceId) return;
     const { id, ...taskData } = newTask;
@@ -228,11 +241,29 @@ const App: React.FC = () => {
     addActivity('TASK', member?.name || 'SYSTEM', `Unit ${updatedTask.name} migrated to ${updatedTask.status}`);
   };
 
+  const handleDeleteTask = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_tasks', id));
+    addActivity('TASK', 'SYSTEM', `Unit ${id} purged.`);
+  };
+
   const handleAddMember = async (newMember: TeamMember) => {
     if (!activeWorkspaceId) return;
     const { id, ...memberData } = newMember;
     await setDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_members', id), sanitizeForFirestore(memberData));
     addActivity('PERSONNEL', 'ADMIN', `Operator ${newMember.name} integrated`);
+  };
+
+  const handleUpdateMember = async (updatedMember: TeamMember) => {
+    if (!activeWorkspaceId) return;
+    const { id, ...data } = updatedMember;
+    await updateDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_members', id), sanitizeForFirestore(data));
+  };
+
+  const handleDeleteMember = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_members', id));
+    addActivity('PERSONNEL', 'ADMIN', `Operator ${id} revoked.`);
   };
 
   const handleAddMilestone = async (newMilestone: Milestone) => {
@@ -242,11 +273,33 @@ const App: React.FC = () => {
     addActivity('SCHEDULE', 'SYSTEM', `Critical marker placed: ${newMilestone.title}`);
   };
 
+  const handleUpdateMilestone = async (updatedMilestone: Milestone) => {
+    if (!activeWorkspaceId) return;
+    const { id, ...data } = updatedMilestone;
+    await updateDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_milestones', id), sanitizeForFirestore(data));
+  };
+
+  const handleDeleteMilestone = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_milestones', id));
+  };
+
   const handleAddClient = async (newClient: Client) => {
     if (!activeWorkspaceId) return;
     const { id, ...cliData } = newClient;
     await setDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_clients', id), sanitizeForFirestore(cliData));
     addActivity('CLIENT', 'SYSTEM', `New corporate entity catalogued: ${newClient.name}`);
+  };
+
+  const handleUpdateClient = async (updatedClient: Client) => {
+    if (!activeWorkspaceId) return;
+    const { id, ...data } = updatedClient;
+    await updateDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_clients', id), sanitizeForFirestore(data));
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_clients', id));
   };
 
   const handleAddError = async (newError: ErrorLog) => {
@@ -265,6 +318,11 @@ const App: React.FC = () => {
       const resolver = members.find(m => m.id === updatedError.resolvedBy);
       addActivity('ERROR', resolver?.name || 'SYSTEM', `Threat neutralized: ${updatedError.title}`);
     }
+  };
+
+  const handleDeleteError = async (id: string) => {
+    if (!activeWorkspaceId) return;
+    await deleteDoc(doc(db, 'workspaces', activeWorkspaceId, 'fana_errors', id));
   };
 
   const enterApp = () => setShowLanding(false);
@@ -299,17 +357,68 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard projects={projects} members={members} tasks={tasks} milestones={milestones} clients={clients} errors={errors} activity={activity} />;
       case 'projects':
-        return <Projects projects={projects} clients={clients} members={members} onAddProject={handleAddProject} />;
+        return (
+          <Projects 
+            projects={projects} 
+            clients={clients} 
+            members={members} 
+            onAddProject={handleAddProject} 
+            onDeleteProject={handleDeleteProject}
+            onUpdateProject={handleUpdateProject}
+          />
+        );
       case 'tasks':
-        return <Tasks projects={projects} tasks={tasks} onAddTask={handleAddTask} onUpdateTask={handleUpdateTask} />;
+        return (
+          <Tasks 
+            projects={projects} 
+            tasks={tasks} 
+            // Fixed typo: Changed handleAddTasks to handleAddTask based on function definition at line 223
+            onAddTask={handleAddTask} 
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+          />
+        );
       case 'teams':
-        return <Teams members={members} projects={projects} onAddMember={handleAddMember} />;
+        return (
+          <Teams 
+            members={members} 
+            projects={projects} 
+            onAddMember={handleAddMember}
+            onUpdateMember={handleUpdateMember}
+            onDeleteMember={handleDeleteMember}
+          />
+        );
       case 'schedules':
-        return <Schedules projects={projects} milestones={milestones} onAddMilestone={handleAddMilestone} />;
+        return (
+          <Schedules 
+            projects={projects} 
+            milestones={milestones} 
+            onAddMilestone={handleAddMilestone}
+            onUpdateMilestone={handleUpdateMilestone}
+            onDeleteMilestone={handleDeleteMilestone}
+          />
+        );
       case 'clients':
-        return <Clients clients={clients} projects={projects} onAddClient={handleAddClient} />;
+        return (
+          <Clients 
+            clients={clients} 
+            projects={projects} 
+            onAddClient={handleAddClient}
+            onUpdateClient={handleUpdateClient}
+            onDeleteClient={handleDeleteClient}
+          />
+        );
       case 'errors':
-        return <ErrorQueue errors={errors} projects={projects} tasks={tasks} onAddError={handleAddError} onUpdateError={handleUpdateError} />;
+        return (
+          <ErrorQueue 
+            errors={errors} 
+            projects={projects} 
+            tasks={tasks} 
+            onAddError={handleAddError} 
+            onUpdateError={handleUpdateError}
+            onDeleteError={handleDeleteError}
+          />
+        );
       default:
         return <Dashboard projects={projects} members={members} tasks={tasks} milestones={milestones} clients={clients} errors={errors} activity={activity} />;
     }
