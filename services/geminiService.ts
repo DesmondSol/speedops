@@ -1,41 +1,33 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
 
+/**
+ * Optimized for speedOps Cluster: 
+ * Using gemini-2.5-flash-lite-latest for maximum efficiency, 
+ * high rate limits, and minimal token consumption.
+ */
+
 export const generateProjectBrief = async (details: any, team: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Generate a high-fidelity, developer-readable Project Brief based on these operational inputs:
-      
-      PROJECT DATA:
-      Name: ${details.name}
+      model: 'gemini-2.5-flash-lite-latest',
+      config: {
+        systemInstruction: "You are the speedOps Strategic Architect. Generate high-signal technical briefs in Markdown. No filler. Precision only.",
+      },
+      contents: `Context:
+      Project: ${details.name}
       Client: ${details.client}
       Purpose: ${details.purpose}
-      Objectives: ${details.objectives}
-      Scope: ${details.scope}
       Features: ${details.features}
-      Timeline Goal: ${details.timeline}
-      Resources: ${details.resources}
+      Team: ${team.map(t => `${t.name} (${t.roles.join(',')})`).join('; ')}
       
-      TEAM ASSIGNED:
-      ${team.map(t => `- ${t.name} (Roles: ${t.roles.join(', ')})`).join('\n')}
-      
-      STRUCTURE:
-      1. EXECUTIVE SUMMARY
-      2. OPERATIONAL OBJECTIVES
-      3. ARCHITECTURE & TECHNICAL ASSUMPTIONS
-      4. CORE FEATURE MAP
-      5. CRITICAL DELIVERY TIMELINE (Detailed schedule with phases)
-      6. TEMPORAL MARKERS (Key milestones and their target days)
-      7. RISK MITIGATION & CONSTRAINTS
-      
-      Use sharp, professional language. Focus on temporal precision and technical clarity. Output as Markdown.`,
+      Output: 1.Summary, 2.Objectives, 3.Feature Map, 4.Timeline, 5.Risks.`,
     });
     return response.text;
   } catch (error) {
     console.error('Gemini Brief Gen Error:', error);
-    return "Error generating brief. Please try again.";
+    return "Error generating brief. System stable. Check connection.";
   }
 };
 
@@ -43,21 +35,9 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
   try {
     const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Analyze the following project brief and generate a detailed work breakdown structure (WBS) and a list of temporal markers (milestones).
-      
-      PROJECT BRIEF:
-      ${brief}
-      
-      AVAILABLE TEAM MEMBERS & ROLES:
-      ${team.map(t => `- ${t.name} (ID: ${t.id}, Roles: ${t.roles.join(', ')})`).join('\n')}
-      
-      INSTRUCTIONS:
-      1. Features & Tasks: Group technical tasks into Features. Assign each task to the most appropriate team member ID.
-      2. Milestones: Define 3-5 critical milestones with specific day offsets from project start (Day 0).
-      
-      OUTPUT FORMAT: JSON`,
+      model: 'gemini-2.5-flash-lite-latest',
       config: {
+        systemInstruction: "Operational Logician: Convert briefs into JSON units. Assign tasks to Team IDs. Keep names short.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -76,10 +56,7 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
                         name: { type: Type.STRING },
                         description: { type: Type.STRING },
                         assigneeId: { type: Type.STRING },
-                        acceptanceCriteria: {
-                          type: Type.ARRAY,
-                          items: { type: Type.STRING }
-                        },
+                        acceptanceCriteria: { type: Type.ARRAY, items: { type: Type.STRING } },
                         startDay: { type: Type.INTEGER },
                         endDay: { type: Type.INTEGER }
                       },
@@ -98,7 +75,7 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
                   title: { type: Type.STRING },
                   description: { type: Type.STRING },
                   dayOffset: { type: Type.INTEGER },
-                  urgency: { type: Type.STRING, description: "Low, Medium, or High" }
+                  urgency: { type: Type.STRING }
                 },
                 required: ['title', 'description', 'dayOffset', 'urgency']
               }
@@ -106,10 +83,10 @@ export const generateTaskBreakdown = async (brief: string, team: any[]) => {
           },
           required: ['features', 'milestones']
         }
-      }
+      },
+      contents: `Brief: ${brief}\n\nID Map:\n${team.map(t => `${t.id}: ${t.name}`).join('\n')}`,
     });
-    const parsed = JSON.parse(response.text || '{"features": [], "milestones": []}');
-    return parsed;
+    return JSON.parse(response.text || '{"features": [], "milestones": []}');
   } catch (error) {
     console.error('Gemini Breakdown Gen Error:', error);
     return { features: [], milestones: [] };

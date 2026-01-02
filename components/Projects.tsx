@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Check, 
@@ -59,6 +59,27 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
   const [generatedBrief, setGeneratedBrief] = useState('');
   const [generatedBreakdown, setGeneratedBreakdown] = useState<{features: any[], milestones: any[]}>({ features: [], milestones: [] });
 
+  // Persistent Cache to avoid token bleeding on page reload
+  useEffect(() => {
+    const draft = localStorage.getItem('speedops_creation_cache');
+    if (draft && view === 'create') {
+      const parsed = JSON.parse(draft);
+      setFormData(parsed.formData);
+      setTeamAssignments(parsed.teamAssignments);
+      setGeneratedBrief(parsed.generatedBrief);
+      setGeneratedBreakdown(parsed.generatedBreakdown || { features: [], milestones: [] });
+      setStep(parsed.step);
+    }
+  }, [view]);
+
+  useEffect(() => {
+    if (view === 'create') {
+      localStorage.setItem('speedops_creation_cache', JSON.stringify({
+        formData, teamAssignments, generatedBrief, generatedBreakdown, step
+      }));
+    }
+  }, [formData, teamAssignments, generatedBrief, generatedBreakdown, step, view]);
+
   const toggleRole = (memberId: string, role: Role) => {
     setTeamAssignments(prev => {
       const existing = prev.find(p => p.id === memberId);
@@ -77,25 +98,30 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
   };
 
   const handleNext = async () => {
+    // Only trigger AI if the relevant step content is missing from state/cache
     if (step === 2) {
-      setLoading(true);
-      const teamData = teamAssignments.map(ta => ({
-        ...MOCK_TEAM.find(m => m.id === ta.id),
-        roles: ta.roles
-      }));
-      const brief = await generateProjectBrief(formData, teamData);
-      setGeneratedBrief(brief);
-      setLoading(false);
+      if (!generatedBrief) {
+        setLoading(true);
+        const teamData = teamAssignments.map(ta => ({
+          ...MOCK_TEAM.find(m => m.id === ta.id),
+          roles: ta.roles
+        }));
+        const brief = await generateProjectBrief(formData, teamData);
+        setGeneratedBrief(brief);
+        setLoading(false);
+      }
       setStep(3);
     } else if (step === 3) {
-      setLoading(true);
-      const teamData = teamAssignments.map(ta => ({
-        ...MOCK_TEAM.find(m => m.id === ta.id),
-        roles: ta.roles
-      }));
-      const breakdown = await generateTaskBreakdown(generatedBrief, teamData);
-      setGeneratedBreakdown(breakdown);
-      setLoading(false);
+      if (!generatedBreakdown || generatedBreakdown.features.length === 0) {
+        setLoading(true);
+        const teamData = teamAssignments.map(ta => ({
+          ...MOCK_TEAM.find(m => m.id === ta.id),
+          roles: ta.roles
+        }));
+        const breakdown = await generateTaskBreakdown(generatedBrief, teamData);
+        setGeneratedBreakdown(breakdown);
+        setLoading(false);
+      }
       setStep(4);
     } else {
       setStep(prev => prev + 1);
@@ -121,7 +147,6 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
       timeline: formData.timeline,
       resources: formData.resources,
       features: generatedBreakdown.features,
-      // We'll pass milestones through a custom property for App.tsx to handle
       // @ts-ignore
       aiMilestones: generatedBreakdown.milestones
     };
@@ -139,6 +164,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
     setTeamAssignments([]);
     setGeneratedBrief('');
     setGeneratedBreakdown({ features: [], milestones: [] });
+    localStorage.removeItem('speedops_creation_cache');
   };
 
   const handleProjectSelect = (project: Project) => {
@@ -230,13 +256,12 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
     return (
       <div className="max-w-4xl mx-auto px-2 md:px-0 mb-12">
         <div className="flex justify-between items-center mb-8">
-           <button onClick={() => setView('list')} className="text-gray-500 hover:text-[#FF6A00] uppercase font-mono text-[9px] md:text-xs">
+           <button onClick={() => { setView('list'); resetForm(); }} className="text-gray-500 hover:text-[#FF6A00] uppercase font-mono text-[9px] md:text-xs">
              <ChevronLeft size={14} className="inline mr-1" /> Abort
            </button>
            <h2 className="text-lg md:text-2xl font-bold tracking-widest uppercase">Init_Unit</h2>
         </div>
 
-        {/* Responsive Stepper */}
         <div className="flex justify-between mb-10 overflow-x-auto no-scrollbar pb-2">
           {[1, 2, 3, 4].map(s => (
             <div key={s} className="flex flex-col items-center min-w-[70px]">
@@ -256,7 +281,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
                <div className="relative w-16 h-16">
                  <div className="absolute inset-0 border-2 border-[#FF6A00] border-t-transparent rounded-full animate-spin" />
                </div>
-               <div className="text-xs font-mono text-[#FF6A00] animate-pulse uppercase">Neural Processing...</div>
+               <div className="text-xs font-mono text-[#FF6A00] animate-pulse uppercase">Neural Processing (2.5 Lite)...</div>
              </div>
           ) : (
             <div className="space-y-6">
@@ -343,7 +368,7 @@ export const Projects: React.FC<ProjectsProps> = ({ projects, clients, onAddProj
                   </div>
                   <div className="flex justify-between">
                     <button onClick={() => setStep(2)} className="text-gray-600 uppercase text-[10px]">Back</button>
-                    <button onClick={handleNext} className="btn-primary px-8 py-3 text-[10px]">Breakdown Breakdown</button>
+                    <button onClick={handleNext} className="btn-primary px-8 py-3 text-[10px]">Generate Roadmap</button>
                   </div>
                 </div>
               )}
